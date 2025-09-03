@@ -60,7 +60,7 @@ class SendOrderMessege implements ShouldQueue
     {
         $ref = $this->orderNumber ? " (Order: {$this->orderNumber})" : '';
         // Keep it < 160 chars if you want single-segment English
-        return "Ponnobd Electronics\nপ্রিয় গ্রাহক!\nআপনার {$ref}\nঅর্ডারটি সফলভাবে গ্রহণ করা হয়েছে।\nবিস্তারিত: +8801880162323";
+        return "Pentanik TV\nপ্রিয় গ্রাহক!\nআপনার {$ref}\nঅর্ডারটি সফলভাবে গ্রহণ করা হয়েছে।\nবিস্তারিত: +8801880162323";
 
     }
 

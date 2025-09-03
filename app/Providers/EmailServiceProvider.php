@@ -44,9 +44,11 @@ class EmailServiceProvider extends ServiceProvider
                         orderNumber: $order->code ?? (string) $order->code
                     )->onQueue('sms');
 
-                    Log::info('[OrderMailSP] Queued mail + SMS', ['order_id' => $order->code]);
+                   
                     // Use send() while debugging so queues don’t hide issues
                     Mail::to(config('mail.admin_address'))->queue(new AdminNewOrderMail($order));
+
+                    Log::info('[OrderMailSP] Queued mail + SMS', ['order_id' => $order->code]);
                     
                     // 2) Queue customer thank-you SMS
 
