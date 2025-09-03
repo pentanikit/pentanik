@@ -14,6 +14,12 @@ return [
     |
     */
 
+    'bulksmsbd' => [
+        'api_key'   => env('BULKSMSBD_API_KEY'),
+        'sender_id' => env('BULKSMSBD_SENDER_ID', 'YourMask'),
+        'endpoint'  => 'https://bulksmsbd.net/api/smsapi', // One-to-many endpoint
+    ],
+
     'mailgun' => [
         'domain' => env('MAILGUN_DOMAIN'),
         'secret' => env('MAILGUN_SECRET'),
