@@ -42,7 +42,7 @@
 
   @yield('meta')
  
-
+@stack('schema')
   {{-- CSS --}}
   <link rel="stylesheet" href="{{ asset('frontend/v2/css/line-awesome.min.css') }}">
   <link rel="stylesheet" href="{{ asset('frontend/v2/css/bootstrap.min.css') }}">
