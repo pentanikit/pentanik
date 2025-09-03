@@ -87,6 +87,8 @@ return [
         ],
     ],
 
+    'admin_address' => env('ADMIN_EMAIL', 'pentanikit2023@gmail.com'),
+
     /*
     |--------------------------------------------------------------------------
     | Global "From" Address

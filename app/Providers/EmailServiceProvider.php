@@ -37,10 +37,7 @@ class EmailServiceProvider extends ServiceProvider
                 Log::info('[OrderMailSP] afterCommit firing', ['order_id' => $order->code]);
 
                 try {
-                    // Use send() while debugging so queues don’t hide issues
-                    Mail::to(config('mail.admin_address'))->queue(new AdminNewOrderMail($order));
-                    
-                    // 2) Queue customer thank-you SMS
+
                     SendOrderMessege::dispatch(
                         phone: $billing['phone'],
                         customerName: $billing['full_name'] ?? 'Customer',
@@ -48,6 +45,11 @@ class EmailServiceProvider extends ServiceProvider
                     )->onQueue('sms');
 
                     Log::info('[OrderMailSP] Queued mail + SMS', ['order_id' => $order->code]);
+                    // Use send() while debugging so queues don’t hide issues
+                    Mail::to(config('mail.admin_address'))->queue(new AdminNewOrderMail($order));
+                    
+                    // 2) Queue customer thank-you SMS
+
                     
                 } catch (\Throwable $e) {
                     Log::error('[OrderMailSP] Mail error', ['order_id' => $order->code, 'msg' => $e->getMessage()]);
