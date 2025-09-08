@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Backend\ProductController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -64,6 +64,10 @@ Auth::routes();
 
 // Product details
 Route::get('/{slug}', ProductOrCategory::class)->name('product.details');
+
+
+Route::post('/{product}/reviews', [ProductController::class, 'postReview'])
+    ->name('reviews.store');
 
 
 Route::get("nullable",function(){

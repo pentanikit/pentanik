@@ -53,6 +53,16 @@
   <link rel="stylesheet" href="{{ asset('frontend/v2/css/magiczoom.css') }}">
   <link rel="stylesheet" href="{{ asset('frontend/v2/css/main.css?v=3.7') }}">
 
+    <!-- Toastr CSS -->
+<link rel="stylesheet"  href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+
+<!-- jQuery (required for toastr) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Toastr JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   {{-- 2) Analytics helpers + robust SPA page_view shim --}}
@@ -314,5 +324,14 @@
   <script src="{{ asset('frontend/v2/js/splitting.min.js') }}"></script>
   <script src="{{ asset('frontend/v2/js/magiczoom.js') }}"></script>
   <script src="{{ asset('frontend/v2/js/main.js?v=1.4') }}"></script>
+    <script>
+    @if (session('success'))
+        toastr.success("{{ session('success') }}");
+    @endif
+
+    @if (session('error'))
+        toastr.error("{{ session('error') }}");
+    @endif
+</script>
 </body>
 </html>
