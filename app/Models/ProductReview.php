@@ -14,11 +14,5 @@ class ProductReview extends Model
         return $this->hasOne(User::class, 'id', 'user_id');
     }
 
-    protected $fillable = [
-        'product_id',
-        'user_id',
-        'rating',
-        'comment',
-        'created_at',
-    ];
+protected $fillable = ['product_id','user_id', 'guest_name', 'rating','comment','status','viewed'];
 }
