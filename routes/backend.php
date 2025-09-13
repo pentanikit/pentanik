@@ -79,6 +79,14 @@ Route::prefix('products')->name('products.')->middleware('can:products_view')->g
     Route::delete('bulk/delete', [App\Http\Controllers\Backend\ProductController::class, 'bulkDelete'])->middleware('can:products_bulk_delete')->name('bulk.delete');
 });
 
+
+Route::prefix('reviews')->name('reviews.')->group(function(){
+    Route::get('/', [App\Http\Controllers\Backend\ReviewController::class, 'index'])->name('show');
+    Route::delete('/delete/{review}', [App\Http\Controllers\Backend\ReviewController::class, 'destroy'])->name('destroy');
+    Route::delete('/bulk-destroy', [App\Http\Controllers\Backend\ReviewController::class, 'bulkDestroy'])->name('bulk-destroy');
+});
+
+
 // Attribute
 Route::prefix('attributes')->name('attribute.')->middleware('can:attributes_view')->group(function () {
     Route::get('/', [App\Http\Controllers\Backend\AttributeController::class, 'index'])->name('index');

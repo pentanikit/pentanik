@@ -297,198 +297,354 @@
 
                 <div class="tab-pane fade" id="review" role="tabpanel" aria-labelledby="review-tab">
                   <div class="details-wrap mb-4">
-                    <div class="reviews-container">
-                      <h2 class="section-title">Customer Reviews</h2>
-                
-                      <div class="rating-summary">
-                        <div class="average-rating">
-                          {{ number_format($product->reviews->avg('rating')) }}
-                          <span style="font-size:1.5rem;">/5</span>
-                          <span class="mx-3 review-rating">
-                            {!! str_repeat('★', (int) $product->reviews->avg('rating')) . str_repeat('☆', 5 - (int) $product->reviews->avg('rating')) !!}
-                          </span>
-                        </div>
-                      </div>
-
-                     @php
-                    // Full unique list (latest first)
-                    $uniqueAll = $product->reviews
-                        ->sortByDesc('created_at')
-                              
-                        ->values();
-
-                    $initialCount = 2;           // how many to show collapsed
-                    @endphp
-
-                    <div class="reviews-list" id="reviewsList">
-                       
-                    @foreach ($uniqueAll as $i => $review)
-                        <div class="review-item {{ $i >= $initialCount ? 'review-extra hidden' : '' }}">
-                        <div class="review-header">
-                            <span class="reviewer-name">{{ optional($review->user)->name ?? ($review->guest_name ?? 'Anonymous') }}</span>
-                            <span class="review-date">{{ $review->created_at->format('M d, Y') }}</span>
-                        </div>
-                        <div class="review-rating" aria-label="{{ (int) $review->rating }} out of 5">
-                            {!! str_repeat('★', (int) $review->rating) . str_repeat('☆', 5 - (int) $review->rating) !!}
-                        </div>
-                        <p class="review-content">{{ $review->comment }}</p>
-                        </div>
-                    @endforeach
-                    </div>
-
-                    @if ($uniqueAll->count() > $initialCount)
-                    <button type="button"
-                            id="toggleReviewsBtn"
-                            class="add-review-btn"
-                            data-expanded="0">
-                        See all reviews ({{ $uniqueAll->count() }})
-                    </button>
-                    @endif
-
-                    <style>
-                        .hidden{display:none;}
-                        
-                        .show-all-btn:hover{background:#0b5ed7;}
-
-                    </style>
-
-                      {{-- Toggle button is NOT a submit --}}
-                      <button class="add-review-btn" id="show-form-btn" type="button">Write a Review</button>
-
-                      <div class="review-form" id="review-form">
-                        <h3 class="form-title">Add Your Review</h3>
-
-                    <form id="reviewForm"  action="{{ route('reviews.store', $product) }}" method="POST" novalidate>
-                       @csrf
-
-                        @guest
-                        <div class="form-group">
-                            <label class="form-label" for="name">Your Name</label>
-                            <input type="text" class="form-input" id="name" name="guest_name" required>
-                        </div>
-                        @endguest
-
-                        <div class="form-group">
-                            <label class="form-label">Your Rating</label>
-                            <div class="rating-input" style="display:flex; gap:.25rem; flex-direction: row-reverse;">
-                                <input type="radio" id="star5" name="rating" value="5"><label for="star5">★</label>
-                                <input type="radio" id="star4" name="rating" value="4"><label for="star4">★</label>
-                                <input type="radio" id="star3" name="rating" value="3"><label for="star3">★</label>
-                                <input type="radio" id="star2" name="rating" value="2"><label for="star2">★</label>
-                                <input type="radio" id="star1" name="rating" value="1" required><label for="star1">★</label>
+                    @if($product->reviews)
+                      <div class="reviews-container">
+                            <h2 class="section-title">Customer Reviews</h2>
+                      
+                            <div class="rating-summary">
+                              <div class="average-rating">
+                                {{ number_format($product->reviews->avg('rating')) }}
+                                <span style="font-size:1.5rem;">/5</span>
+                                <span class="mx-3 review-rating">
+                                  {!! str_repeat('★', (int) $product->reviews->avg('rating')) . str_repeat('☆', 5 - (int) $product->reviews->avg('rating')) !!}
+                                </span>
+                              </div>
                             </div>
-                        </div>
 
-                        <div class="form-group">
-                            <label class="form-label" for="review">Your Review</label>
-                            <textarea class="form-input" id="review" name="comment" required></textarea>
-                        </div>
+                          @php
+                          // Full unique list (latest first)
+                          $uniqueAll = $product->reviews
+                              ->sortByDesc('created_at')
+                                    
+                              ->values();
 
-                        <button type="submit" class="submit-btn" id="submitBtn">
-                            <span class="btn-text">Submit Review</span>
-                            <span class="btn-loading" style="display:none;">Submitting…</span>
-                        </button>
-                    
-                       
-                    
-                        
-                    
-                    </form>
-                      </div>
-                    </div>
+                          $initialCount = 2;           // how many to show collapsed
+                          @endphp
 
-                    <style>
-                      .reviews-container{max-width:800px;background:#fff;border-radius:8px;box-shadow:0 2px 16px rgba(0,0,0,.08);padding:2rem;}
-                      .section-title{font-size:1.5rem;font-weight:600;margin-bottom:1.5rem;color:#2c3e50;border-bottom:1px solid #eaecef;padding-bottom:.75rem;}
-                      .rating-summary{display:flex;align-items:center;margin-bottom:2rem;padding:1.5rem;background:#f8f9fa;border-radius:6px;}
-                      .average-rating{font-size:3rem;font-weight:300;color:#2c3e50;margin-right:1.5rem;}
-                      .reviews-list{margin-bottom:2rem;}
-                      .review-item{padding:1.5rem 0;border-bottom:1px solid #eaecef;}
-                      .review-item:last-child{border-bottom:none;}
-                      .review-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;}
-                      .reviewer-name{font-weight:600;color:#2c3e50;}
-                      .review-date{font-size:.85rem;color:#6c757d;}
-                      .review-rating{color:#ffc107;margin-bottom:.5rem;font-size:1.1rem;letter-spacing:2px;}
-                      .review-content{color:#495057;line-height:1.6;}
-                      .add-review-btn{background:#2c3e50;color:#fff;border:none;padding:.75rem 1.5rem;border-radius:4px;font-weight:500;cursor:pointer;transition:background .2s;}
-                      .add-review-btn:hover{background:#1a252f;}
-                      .review-form{display:none;margin-top:2rem;padding:1.5rem;background:#f8f9fa;border-radius:6px;}
-                      .form-title{font-size:1.2rem;margin-bottom:1rem;color:#2c3e50;}
-                      .form-group{margin-bottom:1rem;}
-                      .form-label{display:block;margin-bottom:.5rem;font-weight:500;color:#495057;}
-                      .form-input{width:100%;padding:.75rem;border:1px solid #ced4da;border-radius:4px;font-size:1rem;}
-                      textarea.form-input{min-height:120px;resize:vertical;}
-                      .rating-input{display:flex;flex-direction:row-reverse;justify-content:flex-end;margin-bottom:1rem;}
-                      .rating-input input{display:none;}
-                      .rating-input label{cursor:pointer;width:30px;height:30px;background:#e9ecef;display:flex;justify-content:center;align-items:center;color:#6c757d;font-size:1.5rem;transition:all .2s;}
-                      .rating-input input:checked ~ label,
-                      .rating-input label:hover,
-                      .rating-input label:hover ~ label{background:#ffc107;color:#fff;}
-                      .submit-btn{background:#28a745;color:#fff;border:none;padding:.75rem 1.5rem;border-radius:4px;font-weight:500;cursor:pointer;transition:background .2s;}
-                      .submit-btn:hover{background:#218838;}
-                      @media (max-width:600px){
-                        .rating-summary{flex-direction:column;align-items:flex-start;}
-                        .average-rating{margin-bottom:1rem;}
-                        .reviews-container{padding:1rem;}
-                      }
-                    </style>
+                          <div class="reviews-list" id="reviewsList">
+                            
+                          @foreach ($uniqueAll as $i => $review)
+                              <div class="review-item {{ $i >= $initialCount ? 'review-extra hidden' : '' }}">
+                              <div class="review-header">
+                                  <span class="reviewer-name">{{ optional($review->user)->name ?? ($review->guest_name ?? 'Anonymous') }}</span>
+                                  <span class="review-date">{{ $review->created_at->format('M d, Y') }}</span>
+                              </div>
+                              <div class="review-rating" aria-label="{{ (int) $review->rating }} out of 5">
+                                  {!! str_repeat('★', (int) $review->rating) . str_repeat('☆', 5 - (int) $review->rating) !!}
+                              </div>
+                              <p class="review-content">{{ $review->comment }}</p>
+                              </div>
+                          @endforeach
+                          </div>
 
- 
-                    <script>
-                     
-                        const showFormBtn = document.getElementById('show-form-btn');
-                        const reviewForm = document.getElementById('review-form');
+                          @if ($uniqueAll->count() > $initialCount)
+                          <button type="button"
+                                  id="toggleReviewsBtn"
+                                  class="add-review-btn"
+                                  data-expanded="0">
+                              See all reviews ({{ $uniqueAll->count() }})
+                          </button>
+                          @endif
 
-                        showFormBtn.addEventListener('click', function () {
-                          const open = reviewForm.style.display === 'block';
-                          reviewForm.style.display = open ? 'none' : 'block';
-                          showFormBtn.textContent = open ? 'Write a Review' : 'Cancel';
-                        });
-                    
+                          <style>
+                              .hidden{display:none;}
+                              
+                              .show-all-btn:hover{background:#0b5ed7;}
 
+                          </style>
 
-                    </script>
-                    <script>
-                        (function () {
-                            const btn = document.getElementById('toggleReviewsBtn');
-                            if (!btn) return;
+                            {{-- Toggle button is NOT a submit --}}
+                            <button class="add-review-btn" id="show-form-btn" type="button">Write a Review</button>
 
-                            const extras = () => document.querySelectorAll('.review-extra');
-                            const total  = {{ $uniqueAll->count() }};
-                            const seeAllText = `See all reviews (${total})`;
-                            const showLessText = 'Show less';
+                            <div class="review-form" id="review-form">
+                              <h3 class="form-title">Add Your Review</h3>
+              <!-- review form -->
+                          <form id="reviewForm"  action="{{ route('reviews.store', $product) }}" method="POST" novalidate>
+                            @csrf
 
-                            function setExpanded(expanded) {
-                            extras().forEach(el => el.classList.toggle('hidden', !expanded));
-                            btn.dataset.expanded = expanded ? '1' : '0';
-                            btn.textContent = expanded ? showLessText : seeAllText;
+                             
+                              <div class="form-group">
+                                  <label class="form-label" for="name">Your Name</label>
+                                  <input type="text" class="form-input" id="name" name="guest_name" required>
+                              </div>
+                              
+
+                              <div class="form-group">
+                                  <label class="form-label">Your Rating</label>
+                                  <div class="rating-input" style="display:flex; gap:.25rem; flex-direction: row-reverse;">
+                                      <input type="radio" id="star5" name="rating" value="5"><label for="star5">★</label>
+                                      <input type="radio" id="star4" name="rating" value="4"><label for="star4">★</label>
+                                      <input type="radio" id="star3" name="rating" value="3"><label for="star3">★</label>
+                                      <input type="radio" id="star2" name="rating" value="2"><label for="star2">★</label>
+                                      <input type="radio" id="star1" name="rating" value="1" required><label for="star1">★</label>
+                                  </div>
+                              </div>
+
+                              <div class="form-group">
+                                  <label class="form-label" for="review">Your Review</label>
+                                  <textarea class="form-input" id="review" name="comment" required></textarea>
+                              </div>
+
+                              <button type="button" class="submit-btn" id="submitBtn">
+                                  <span class="btn-text">Submit Review</span>
+                                  <span class="btn-loading" style="display:none;">Submitting…</span>
+                              </button>
+                          
+                            
+                          
+                              
+                          
+                          </form>
+                            </div>
+                          </div>
+
+                          <style>
+                            .reviews-container{max-width:800px;background:#fff;border-radius:8px;box-shadow:0 2px 16px rgba(0,0,0,.08);padding:2rem;}
+                            .section-title{font-size:1.5rem;font-weight:600;margin-bottom:1.5rem;color:#2c3e50;border-bottom:1px solid #eaecef;padding-bottom:.75rem;}
+                            .rating-summary{display:flex;align-items:center;margin-bottom:2rem;padding:1.5rem;background:#f8f9fa;border-radius:6px;}
+                            .average-rating{font-size:3rem;font-weight:300;color:#2c3e50;margin-right:1.5rem;}
+                            .reviews-list{margin-bottom:2rem;}
+                            .review-item{padding:1.5rem 0;border-bottom:1px solid #eaecef;}
+                            .review-item:last-child{border-bottom:none;}
+                            .review-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;}
+                            .reviewer-name{font-weight:600;color:#2c3e50;}
+                            .review-date{font-size:.85rem;color:#6c757d;}
+                            .review-rating{color:#ffc107;margin-bottom:.5rem;font-size:1.1rem;letter-spacing:2px;}
+                            .review-content{color:#495057;line-height:1.6;}
+                            .add-review-btn{background:#2c3e50;color:#fff;border:none;padding:.75rem 1.5rem;border-radius:4px;font-weight:500;cursor:pointer;transition:background .2s;}
+                            .add-review-btn:hover{background:#1a252f;}
+                            .review-form{display:none;margin-top:2rem;padding:1.5rem;background:#f8f9fa;border-radius:6px;}
+                            .form-title{font-size:1.2rem;margin-bottom:1rem;color:#2c3e50;}
+                            .form-group{margin-bottom:1rem;}
+                            .form-label{display:block;margin-bottom:.5rem;font-weight:500;color:#495057;}
+                            .form-input{width:100%;padding:.75rem;border:1px solid #ced4da;border-radius:4px;font-size:1rem;}
+                            textarea.form-input{min-height:120px;resize:vertical;}
+                            .rating-input{display:flex;flex-direction:row-reverse;justify-content:flex-end;margin-bottom:1rem;}
+                            .rating-input input{display:none;}
+                            .rating-input label{cursor:pointer;width:30px;height:30px;background:#e9ecef;display:flex;justify-content:center;align-items:center;color:#6c757d;font-size:1.5rem;transition:all .2s;}
+                            .rating-input input:checked ~ label,
+                            .rating-input label:hover,
+                            .rating-input label:hover ~ label{background:#ffc107;color:#fff;}
+                            .submit-btn{background:#28a745;color:#fff;border:none;padding:.75rem 1.5rem;border-radius:4px;font-weight:500;cursor:pointer;transition:background .2s;}
+                            .submit-btn:hover{background:#218838;}
+                            @media (max-width:600px){
+                              .rating-summary{flex-direction:column;align-items:flex-start;}
+                              .average-rating{margin-bottom:1rem;}
+                              .reviews-container{padding:1rem;}
                             }
+                          </style>
 
-                            btn.addEventListener('click', () => {
-                            const expanded = btn.dataset.expanded === '1';
-                            setExpanded(!expanded);
+      
+                          <script>
+                          
+                              const showFormBtn = document.getElementById('show-form-btn');
+                              const reviewForm = document.getElementById('review-form');
+
+                              showFormBtn.addEventListener('click', function () {
+                                const open = reviewForm.style.display === 'block';
+                                reviewForm.style.display = open ? 'none' : 'block';
+                                showFormBtn.textContent = open ? 'Write a Review' : 'Cancel';
+                              });
+                          
+
+
+                          </script>
+                          <script>
+                              (function () {
+                                  const btn = document.getElementById('toggleReviewsBtn');
+                                  if (!btn) return;
+
+                                  const extras = () => document.querySelectorAll('.review-extra');
+                                  const total  = {{ $uniqueAll->count() }};
+                                  const seeAllText = `See all reviews (${total})`;
+                                  const showLessText = 'Show less';
+
+                                  function setExpanded(expanded) {
+                                  extras().forEach(el => el.classList.toggle('hidden', !expanded));
+                                  btn.dataset.expanded = expanded ? '1' : '0';
+                                  btn.textContent = expanded ? showLessText : seeAllText;
+                                  }
+
+                                  btn.addEventListener('click', () => {
+                                  const expanded = btn.dataset.expanded === '1';
+                                  setExpanded(!expanded);
+                                  });
+
+                              
+                              })();
+                          </script>
+                          <script>
+                            document.addEventListener("DOMContentLoaded", function () {
+                                @if (session('success'))
+                                    toastr.success("{{ session('success') }}");
+                                @endif
+
+                                @if (session('error'))
+                                    toastr.error("{{ session('error') }}");
+                                @endif
                             });
-
-                        
-                        })();
-                    </script>
-                    <script>
-document.addEventListener("DOMContentLoaded", function () {
-    @if (session('success'))
-        toastr.success("{{ session('success') }}");
-    @endif
-
-    @if (session('error'))
-        toastr.error("{{ session('error') }}");
-    @endif
-});
-</script>
+                          </script>
 
 
-                  
+                           <script>
+                              (function () {
+                                const form        = document.getElementById('reviewForm');
+                                const submitBtn   = document.getElementById('submitBtn');
+                                const btnText     = submitBtn?.querySelector('.btn-text');
+                                const btnLoading  = submitBtn?.querySelector('.btn-loading');
+                                const reviewsList = document.getElementById('reviewsList');
+                                const actionUrl   = form?.getAttribute('action') || '';
+                                const csrfToken   =
+                                  form?.querySelector('input[name="_token"]')?.value ||
+                                  document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
+                                  '';
 
-                  </div>
-                </div> {{-- /#review --}}
+                                if (!form) return;
+
+                                function setLoading(state) {
+                                  if (!submitBtn) return;
+                                  submitBtn.disabled = !!state;
+                                  if (btnText)    btnText.style.display = state ? 'none' : '';
+                                  if (btnLoading) btnLoading.style.display = state ? '' : 'none';
+                                }
+
+                                // --- helpers ---
+                                function escapeHtml(str = '') {
+                                  return String(str)
+                                    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                                    .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+                                    .replace(/'/g, '&#39;');
+                                }
+
+                                function formatDateMdY(input) {
+                                  const d = input ? new Date(input) : new Date();
+                                  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                                  return `${months[d.getMonth()]} ${String(d.getDate()).padStart(2,'0')}, ${d.getFullYear()}`;
+                                }
+
+                                function renderStars(ratingNum) {
+                                  const n = Math.max(0, Math.min(5, Number(ratingNum) || 0));
+                                  return '★'.repeat(n) + '☆'.repeat(5 - n);
+                                }
+
+                                // === UPDATED: now also injects a dynamic review item (on success) ===
+                                function insertAlert(message, type = 'success', reviewData = null) {
+                                  if (!reviewsList) return;
+
+                                  // If success and we have review data/snippet, prepend the review item first
+                                  if (type === 'success' && reviewData) {
+                                    // 1) If server sent ready-made HTML snippet
+                                    if (typeof reviewData.html === 'string' && reviewData.html.trim()) {
+                                      const wrap = document.createElement('div');
+                                      wrap.innerHTML = reviewData.html.trim();
+                                      const node = wrap.firstElementChild;
+                                      if (node) reviewsList.prepend(node);
+                                    } else {
+                                      // 2) Build from JSON / form data
+                                      const name    = reviewData.guest ?? 'Anonymous';
+                                      const date    = reviewData.created_at ?? new Date().toISOString();
+                                      const rating  = reviewData.rating ?? 0;
+                                      const comment = reviewData.comment ?? '';
+                                      const isExtra = !!reviewData.is_extra; // if you want to mark as hidden for "load more" logic
+
+                                      const item = document.createElement('div');
+                                      // Avoid DOMTokenList token errors: add classes properly
+                                      item.classList.add('review-item');
+                                      if (isExtra) {
+                                        item.classList.add('review-extra');
+                                        
+                                      }
+
+                                      // Mirror your Blade template structure & semantics
+                                      item.innerHTML = `
+                                        <div class="review-header">
+                                          <span class="reviewer-name">${escapeHtml(name)}</span>
+                                          <span class="review-date">${formatDateMdY(date)}</span>
+                                        </div>
+                                        <div class="review-rating" aria-label="${Number(rating) || 0} out of 5">
+                                          ${renderStars(rating)}
+                                        </div>
+                                        <p class="review-content">${escapeHtml(comment)}</p>
+                                      `.trim();
+
+                                      reviewsList.prepend(item);
+                                    }
+                                  }
+
+                                  // Now show the alert at the very top
+                                  const alert = document.createElement('div');
+                                  alert.className = `alert alert-${type} my-2`;
+                                  alert.setAttribute('role', 'alert');
+                                  alert.textContent = message;
+                                  reviewsList.append(alert);
+                                  setTimeout(() => alert.remove(), 5000);
+                                }
+
+                                submitBtn.addEventListener('click', async function (e) {
+                                  e.preventDefault();
+                                  setLoading(true);
+
+                                  const formData = new FormData(form);
+
+                                  try {
+                                    const res = await fetch(actionUrl, {
+                                      method: 'POST',
+                                      headers: {
+                                        'X-Requested-With': 'XMLHttpRequest',
+                                        'X-CSRF-TOKEN': csrfToken,
+                                        'Accept': 'application/json'
+                                      },
+                                      body: formData
+                                    });
+
+                                    const raw = await res.text();
+                                    let data = null; try { data = JSON.parse(raw); } catch (_){}
+
+                                    if (!res.ok) {
+                                      if (res.status === 422 && data?.errors) {
+                                        insertAlert('There were some errors. Please correct and submit again.', 'danger');
+                                      } else {
+                                        insertAlert(data?.message || 'Something went wrong. Please try again.', 'danger');
+                                      }
+                                    } else {
+                                      // Build a flexible review payload:
+                                      const reviewPayload =
+                                        data?.review
+                                          ? data.review
+                                          : {
+                                              // Fallback to form values if server didn't return a review object
+                                              name: formData.get('guest_name') || formData.get('name') || (data?.name) || 'Anonymous',
+                                              created_at: data?.created_at || new Date().toISOString(),
+                                              rating: Number(formData.get('rating') || data?.rating || 0),
+                                              comment: formData.get('comment') || data?.comment || '',
+                                              is_extra: false
+                                            };
+
+                                      insertAlert('✅ Thank you! Your review has been submitted.', 'success', {
+                                        html: data?.html, // preferred if your API sends rendered HTML
+                                        ...reviewPayload
+                                      });
+
+                                      form.reset();
+                                      form.querySelectorAll('input[name="rating"]').forEach(r => (r.checked = false));
+                                    }
+                                  } catch (_) {
+                                    insertAlert('Network error. Please try again.', 'danger');
+                                  } finally {
+                                    setLoading(false);
+                                  }
+                                });
+                              })();
+                            </script>
+
+
+                      
+
+                        </div>
+                      </div> {{-- /#review --}}
+                    @else
+                        <div>No Ratings and reviews yet</div>
+                    @endif
               </div>
             </div>
           </div>

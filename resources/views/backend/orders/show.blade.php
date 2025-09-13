@@ -5,27 +5,115 @@ Orders
 @endsection
 @push('js')
 <script>
-        $('#update_delivery_status').on('change', function(){
-            var order_id = {{ $order->id }};
-            var status = $('#update_delivery_status').val();
-            $.post('{{ route('order.update.status') }}', {
-                _token:'{{ @csrf_token() }}',
-                order_id:order_id,
-                status:status
-            }, function(data){
-                window.location.reload();
-            });
-        });
+(function(){
+    // --- helper: title-case for UI text ---
+    function toTitleCase(str){
+        return (str || '').replace(/_/g,' ').replace(/\w\S*/g, t => t.charAt(0).toUpperCase() + t.slice(1));
+    }
 
-        $('#update_payment_status').on('change', function(){
-            var order_id = {{ $order->id }};
-            var status = $('#update_payment_status').val();
-            $.post('{{ route('order.update.payment.status') }}', {_token:'{{ @csrf_token() }}',order_id:order_id,status:status}, function(data){
-                window.location.reload();
+    // --- notifier: prefer toastr, fallback to Bootstrap toast container (#toastContainer) ---
+    function notifySuccess(msg){
+        if (window.toastr) { toastr.clear(); toastr.success(msg); }
+        else { showBootstrapToast(msg, 'success'); }
+    }
+    function notifyError(msg){
+        if (window.toastr) { toastr.clear(); toastr.error(msg); }
+        else { showBootstrapToast(msg, 'danger'); }
+    }
+    function showBootstrapToast(message, type){ // success | danger | warning | info
+        const container = document.getElementById('toastContainer') || document.body;
+        const isBootstrap = window.bootstrap && bootstrap.Toast;
+        if (isBootstrap) {
+            const el = document.createElement('div');
+            el.className = `toast align-items-center text-bg-${type} border-0`;
+            el.setAttribute('role','alert'); el.setAttribute('aria-live','assertive'); el.setAttribute('aria-atomic','true');
+            el.innerHTML = `<div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>`;
+            container.appendChild(el);
+            const t = new bootstrap.Toast(el, { delay: 2200 });
+            t.show();
+            el.addEventListener('hidden.bs.toast', () => el.remove());
+        } else {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} alert-dismissible fade show shadow`;
+            alert.innerHTML = `<strong>${type === 'success' ? 'Success' : 'Notice'}:</strong> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>`;
+            container.appendChild(alert);
+            setTimeout(()=> alert.remove(), 2500);
+        }
+    }
+
+    // --- AJAX helper: do not use server response text for UI messaging ---
+    function ajaxUpdate(url, payload, successMsg, errorMsg, onSuccess){
+        return $.post(url, payload)
+            .done(function(){
+                // Always show your custom success text
+                notifySuccess(successMsg);
+                if (typeof onSuccess === 'function') onSuccess();
+            })
+            .fail(function(xhr){
+                // Always show your custom error text (log details to console for dev)
+                console.error('Update failed', xhr);
+                notifyError(errorMsg);
             });
-        });
+    }
+
+    // Routes & CSRF
+    const routes = {
+        delivery: '{{ route('order.update.status') }}',
+        payment : '{{ route('order.update.payment.status') }}'
+    };
+    const csrf = '{{ csrf_token() }}';
+    const orderId = {{ $order->id }};
+
+    // Small UX: disable → request → enable
+// REPLACE your current withSaving with this:
+function withSaving($el, jqXHR){
+    $el.prop('disabled', true).addClass('opacity-75');
+    return jqXHR.always(function(){
+        $el.prop('disabled', false).removeClass('opacity-75');
+    });
+}
+
+
+    // Delivery status change
+    $(document).on('change', '#update_delivery_status', function(){
+        const $sel = $(this);
+        const status = $sel.val();
+        withSaving($sel, ajaxUpdate(
+            routes.delivery,
+            { _token: csrf, order_id: orderId, status },
+            'Delivery status updated',                      // ✅ your custom success text
+            'Could not update delivery status',             // ✅ your custom error text
+            function(){
+                // reflect change in UI
+                const cell = document.getElementById('orderStatusText');
+                if (cell) cell.textContent = toTitleCase(status);
+            }
+        ));
+    });
+
+    // Payment status change
+    $(document).on('change', '#update_payment_status', function(){
+        const $sel = $(this);
+        const status = $sel.val();
+        withSaving($sel, ajaxUpdate(
+            routes.payment,
+            { _token: csrf, order_id: orderId, status },
+            'Payment status updated',                       // ✅ your custom success text
+            'Could not update payment status',              // ✅ your custom error text
+            function(){
+                // you can also reflect this somewhere if needed
+            }
+        ));
+    });
+})();
 </script>
 @endpush
+
+
 @section('content')
 <div class="card">
     <div class="vstack gap-4">
@@ -73,26 +161,44 @@ Orders
                                     <th class="fw-600">Email:</th>
                                     <td>{{ $order->user->email ?? 'Guest User' }}</td>
                                 </tr>
-                                <tr>
-                                    <th class="fw-600">Shipping address:</th>
-                                    <td>
-                                        @php
-                                            $shipping = is_array($order->shipping) ? $order->shipping : json_decode($order->shipping);
-                                            $billing = is_array($order->billing) ? $order->billing : json_decode($order->billing);
-                                        @endphp
-                                        @foreach ($shipping as $key => $ship)
-                                        <b>{{ ucwords(str_replace('_',' ',$key)) }}</b> : {{ $ship }} <br>
-                                        @endforeach
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th class="fw-600">Billing address:</th>
-                                    <td>
-                                        @foreach ($billing as $key => $ship)
-                                        <b>{{ ucwords(str_replace('_',' ',$key)) }}</b> : {{ $ship }} <br>
-                                        @endforeach
-                                    </td>
-                                </tr>
+                                @php
+                                // Normalize to arrays (handles null, JSON strings, or stdClass)
+                                $shippingRaw = $order->shipping ?? null;
+                                $billingRaw  = $order->billing ?? null;
+
+                                $shipping = is_array($shippingRaw)
+                                    ? $shippingRaw
+                                    : (is_string($shippingRaw) ? json_decode($shippingRaw, true) : (array) $shippingRaw);
+
+                                $billing = is_array($billingRaw)
+                                    ? $billingRaw
+                                    : (is_string($billingRaw) ? json_decode($billingRaw, true) : (array) $billingRaw);
+
+                                $shipping = is_array($shipping) ? $shipping : [];
+                                $billing  = is_array($billing)  ? $billing  : [];
+                            @endphp
+
+                            <tr>
+                                <th class="fw-600">Shipping address:</th>
+                                <td>
+                                    @forelse ($shipping as $key => $val)
+                                        <b>{{ ucwords(str_replace('_',' ', $key)) }}</b> : {{ $val }} <br>
+                                    @empty
+                                        <em>N/A</em>
+                                    @endforelse
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="fw-600">Billing address:</th>
+                                <td>
+                                    @forelse ($billing as $key => $val)
+                                        <b>{{ ucwords(str_replace('_',' ', $key)) }}</b> : {{ $val }} <br>
+                                    @empty
+                                        <em>N/A</em>
+                                    @endforelse
+                                </td>
+                            </tr>
+
                             </tbody>
                         </table>
                     </div>
@@ -105,7 +211,8 @@ Orders
                                 </tr>
                                 <tr>
                                     <th class="fw-600">Order status:</th>
-                                    <td>{{ ucwords(str_replace('_',' ',$order->status)) }}</td>
+                                    <td id="orderStatusText">{{ ucwords(str_replace('_',' ',$order->status)) }}</td>
+
                                 </tr>
                                 <tr>
                                     <th class="fw-600">Total order amount:</th>
@@ -113,7 +220,7 @@ Orders
                                 </tr>
                                 <tr>
                                     <th class="fw-600">Shipping method:</th>
-                                    <td>{{ ucwords(str_replace('_',' ',$order->detail->first()?->shipping_type)) }}</td>
+                                    <td>{{ ucwords(str_replace('_',' ',$order->orderDetails->first()?->shipping_type)) }}</td>
                                 </tr>
                                 <tr>
                                     <th class="fw-600">Payment method:</th>
@@ -151,7 +258,7 @@ Orders
                                 $subtotal = 0;
                             @endphp
                             <tbody class="fs-14">
-                                @foreach ($order->detail as $detail)
+                                @foreach ($order->orderDetails as $detail)
                                 @php
                                     $variants = json_decode($detail->variation);
                                     $product = $detail->product;
@@ -223,4 +330,7 @@ Orders
         </div>
     </div>
 </div>
+{{-- Toast/alert container --}}
+<div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index:1100;"></div>
+
 @endsection
