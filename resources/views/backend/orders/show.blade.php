@@ -48,10 +48,10 @@ Orders
     // --- AJAX helper: do not use server response text for UI messaging ---
     function ajaxUpdate(url, payload, successMsg, errorMsg, onSuccess){
         return $.post(url, payload)
-            .done(function(){
+            .done(function(res){
                 // Always show your custom success text
                 notifySuccess(successMsg);
-                if (typeof onSuccess === 'function') onSuccess();
+                if (typeof onSuccess === 'function') onSuccess(res);
             })
             .fail(function(xhr){
                 // Always show your custom error text (log details to console for dev)
@@ -78,22 +78,64 @@ function withSaving($el, jqXHR){
 }
 
 
-    // Delivery status change
-    $(document).on('change', '#update_delivery_status', function(){
-        const $sel = $(this);
-        const status = $sel.val();
-        withSaving($sel, ajaxUpdate(
-            routes.delivery,
-            { _token: csrf, order_id: orderId, status },
-            'Delivery status updated',                      // ✅ your custom success text
-            'Could not update delivery status',             // ✅ your custom error text
-            function(){
-                // reflect change in UI
-                const cell = document.getElementById('orderStatusText');
-                if (cell) cell.textContent = toTitleCase(status);
-            }
-        ));
-    });
+function setPendingOrdersBadge(count){
+    const badge = document.getElementById('pendingOrdersBadge');
+    if (!badge) return; // sidebar may not be visible for some roles/pages
+    const n = Math.max(0, parseInt(count || 0, 10));
+    if (n > 0) {
+        badge.textContent = n;
+        badge.dataset.count = String(n);
+        badge.style.display = 'inline-block';
+    } else {
+        badge.textContent = '';
+        badge.dataset.count = '0';
+        badge.style.display = 'none';
+    }
+}
+
+// function notifySuccess(msg){
+//   if (window.toastr) { toastr.remove(); toastr.clear(); toastr.success(msg); }
+//   else alert(msg);
+// }
+// function notifyError(msg){
+//   if (window.toastr) { toastr.remove(); toastr.clear(); toastr.error(msg); }
+//   else alert(msg);
+// }
+
+
+// Delivery status change
+// Delivery status change (unify with payment flow)
+$(document)
+        // prevent double-binding
+  .on('change', '#update_delivery_status', function (e) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    const $sel   = $(this);
+    const status = $sel.val();
+
+    withSaving($sel, ajaxUpdate(
+      routes.delivery,
+      { _token: csrf, order_id: orderId, status },
+      'Delivery status updated',              // ✅ toast shown inside ajaxUpdate -> notifySuccess
+      'Could not update delivery status',
+      function (res) {
+        // reflect text on the page
+        const cell = document.getElementById('orderStatusText');
+        if (cell) cell.textContent = (status || '')
+          .replace(/_/g, ' ')
+          .replace(/\w\S*/g, t => t[0].toUpperCase() + t.slice(1));
+
+        // update sidebar badge from server
+        if (res && typeof res.pending_count !== 'undefined') {
+          setPendingOrdersBadge(res.pending_count);
+        }
+      }
+    ));
+});
+
+
+
 
     // Payment status change
     $(document).on('change', '#update_payment_status', function(){

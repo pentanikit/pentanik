@@ -36,16 +36,23 @@ class OrderController extends Controller
         $order->status = $request->status;
         $order->save();
 
-        foreach ($order->detail as $key => $orderDetail) {
+        // foreach ($order->detail as $key => $orderDetail) {
 
-            $orderDetail->status = $request->status;
-            $orderDetail->save();
-        }
+        $pendingCount = Order::where('status', 'pending')->count();
+        // }
+        // $order->status = $request->status;
+        // $order->save();
 
-        session()->flash('success', 'Payment status has been updated!');
-        session()->flash('success', 'Delivery status has been updated!');
+        // session()->flash('success', 'Payment status has been updated!');
+        // session()->flash('success', 'Delivery status has been updated!');
 
-        return 1;
+        // Example in your controller methods:
+        return response()->json([
+            'ok' => true,
+            'message' => 'status updated to ' . ucwords(str_replace('_',' ', $request->status)),
+            'pending_count' => $pendingCount,
+        ]);
+
     }
 
     public function updatePaymentStatus(Request $request)
@@ -56,12 +63,17 @@ class OrderController extends Controller
 
         $order->save();
 
-        foreach ($order->detail as $orderDetail) {
-            $orderDetail->payment_status = $request->status;
-            $orderDetail->save();
-        }
+        // foreach ($order->detail as $orderDetail) {
+        //     $orderDetail->payment_status = $request->status;
+        //     $orderDetail->save();
+        // }
 
-        return 1;
+       // Example in your controller methods:
+    return response()->json([
+        'ok' => true,
+        'message' => 'Delivery status updated to ' . ucwords(str_replace('_',' ', $request->status)),
+    ]);
+
     }
 
     public function destroy($id)
